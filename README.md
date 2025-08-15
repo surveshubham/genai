@@ -1,8 +1,8 @@
-Just create an account in 
-https://platform.openai.com/docs/overview
-copy key an save as - OPENAI_API_KEY = ( your api key ) inside .env file
+// To start using the bot clone and run npm i
+1) Just create an account in https://platform.openai.com/docs/overview
+2) copy key an save as - OPENAI_API_KEY = ( your api key ) inside .env file
 
-To run the command or API use 
+// To run the command or API use 
 you can pass prompt or data inside the files.
 1) node command/generateWeb.js
 2) node command/chat.js
