@@ -8,5 +8,6 @@ you can pass prompt or data inside the files.
 2) node command/chat.js
 
 you can edit this prompt as per your need and o/p.
+
 <img width="467" height="110" alt="image" src="https://github.com/user-attachments/assets/335cc29b-dc49-4bf1-9860-b47363a86e0d" />
 
