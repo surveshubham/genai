@@ -1,26 +1,49 @@
+// index.js
 import express from "express";
-import cors from "cors";
 import dotenv from "dotenv";
-import { promises as fs } from "fs";
-import path from "path";
-import open from "open";
-import OpenAI from "openai";
+import cors from "cors";
+import session from "express-session";
+import passport from "passport";
+
+import "./config/db.js";            // Mongo connection
+import { redisStore } from "./config/redis.js"; // Redis + connect-redis
+import "./config/passport.js";      // Passport Local strategy + serialize/deserialize
+import v1Routes from "./routes/api/v1/index.js";
 
 dotenv.config();
 
 const app = express();
 const PORT = process.env.PORT || 3000;
-const __dirname = process.cwd();
 
-app.use(cors());
+// Middleware
+app.use(cors({ origin: true, credentials: true }));
 app.use(express.json());
 
-const openai = new OpenAI({
-  apiKey: process.env.OPENAI_API_KEY,
-});
+// Sessions (stored in Redis)
+app.use(
+  session({
+    store: redisStore,
+    secret: process.env.SESSION_SECRET || "supersecret",
+    resave: false,
+    saveUninitialized: false,
+    cookie: {
+      httpOnly: true,
+      secure: false,           // set to true behind HTTPS/proxy
+      sameSite: "lax",
+      maxAge: 1000 * 60 * 60,  // 1 hour
+    },
+  })
+);
 
-// --- Store state for previous responses ---
-const userContextMap = new Map(); // { userId: { lastResponseId } }
+// Passport
+app.use(passport.initialize());
+app.use(passport.session());
+
+// Health
+app.get("/", (_req, res) => res.send("✅ API is running"));
+
+// API v1
+app.use("/api/v1", v1Routes);
 
 // --- Utility Functions ---
 function extractHtmlFromText(text) {
@@ -53,7 +76,6 @@ async function generateAndOpenHtml(prompt, userId, filename = "output.html") {
     ...(previousId ? { previous_response_id: previousId } : {}),
   });
 
-  // Save last response ID for the user
   userContextMap.set(userId, { lastResponseId: response.id });
 
   const htmlCode = extractHtmlFromText(response.output_text);
@@ -61,11 +83,6 @@ async function generateAndOpenHtml(prompt, userId, filename = "output.html") {
   await open(filePath);
   return filePath;
 }
-
-// --- Routes ---
-app.get("/", (req, res) => {
-  res.send("✅ API is running");
-});
 
 // Chat endpoint (with state)
 app.post("/chat", async (req, res) => {
@@ -83,7 +100,6 @@ app.post("/chat", async (req, res) => {
       ...(previousId ? { previous_response_id: previousId } : {}),
     });
 
-    // Store last response ID
     userContextMap.set(userId, { lastResponseId: response.id });
 
     res.json({ reply: response.output_text });
@@ -109,7 +125,12 @@ app.post("/generate-web", async (req, res) => {
   }
 });
 
-// --- Start Server ---
+// Start
 app.listen(PORT, () => {
   console.log(`🚀 Server running at http://localhost:${PORT}`);
 });
+
+
+
+
+
