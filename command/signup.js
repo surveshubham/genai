@@ -1,10 +1,9 @@
+
 import axios from "axios";
 
-const [,, data = null] = process.argv;
-let parsedData = {};
-if (data) {
-  try { parsedData = JSON.parse(data); } catch (e) { console.error('Invalid JSON'); process.exit(1); }
-}
+const [,, username, password, email] = process.argv;
+const parsedData = { username, password };
+if (email) parsedData.email = email;
 
 axios.post('http://localhost:3000/api/v1/auth/signup', parsedData)
   .then(res => console.log(res.data))
